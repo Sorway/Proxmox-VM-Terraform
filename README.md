@@ -119,9 +119,9 @@ networks = [
 - `type = "host"` pour le CPU maximise les performances mais réduit la portabilité entre nœuds différents.
 - L'activation du VLAN sur la carte ne rend pas automatiquement le bridge Proxmox VLAN-aware.
 
-Consultez [`terraform.tfvars.example`](terraform.tfvars.example) pour le
+Consultez [`terraform.tfvars.example`](terraform.auto.tfvars.example) pour le
 catalogue de templates et
-[`virtual-machines.tfvars.example`](virtual-machines.tfvars.example) pour un
+[`virtual-machines.tfvars.example`](virtual-machines.auto.tfvars.example) pour un
 exemple complet multi-VM et multi-interface.
 
 ## Licence

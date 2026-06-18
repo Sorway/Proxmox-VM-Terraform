@@ -1,4 +1,4 @@
-# Déploiement de VMs avec Terraform sur Proxmox
+# Déploiement de VMs avec Terraform sur Proxmox VE
 
 <p>
     <img src="https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white"/>

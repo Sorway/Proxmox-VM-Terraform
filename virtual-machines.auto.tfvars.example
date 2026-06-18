@@ -1,0 +1,191 @@
+# Ce fichier contient des exemples de VMs.
+# Copiez-le vers virtual-machines.tfvars, puis adaptez les valeurs.
+
+virtual_machines = {
+  # ---------------------------------------------------------------------------
+  # Exemple 1 : Debian avec deux interfaces et des adresses IPv4 statiques
+  # ---------------------------------------------------------------------------
+  debian-web-01 = {
+    # Nom visible dans Proxmox et nom d'hôte transmis par cloud-init.
+    name     = "debian-web-01"
+
+    # VMID Proxmox. Il doit être unique dans le cluster.
+    # Cette option peut être omise pour laisser Proxmox choisir un VMID.
+    vm_id    = 1101
+
+    # Clé du template déclaré dans terraform.tfvars.
+    template = "template-debian"
+
+    # Tags visibles dans Proxmox.
+    tags     = ["terraform", "debian", "web"]
+
+    cpu = {
+      # Nombre de cœurs par socket.
+      cores   = 4
+
+      # Nombre de sockets virtuels.
+      sockets = 1
+
+      # qemu64 : compatible entre différents nœuds.
+      # host   : meilleures performances, mais migration plus restrictive.
+      # x86-64-v2-AES : bon compromis moderne.
+      type    = "qemu64"
+    }
+
+    memory = {
+      # Mémoire maximale en Mo.
+      dedicated = 4096
+
+      # Ballooning en Mo.
+      # 0 désactive le ballooning.
+      # La même valeur que dedicated l'active sans réduire la RAM initiale.
+      floating  = 4096
+    }
+
+    # La clé correspond à l'interface disque Proxmox : scsi0, scsi1, etc.
+    disks = {
+      # Disque système cloné depuis le template.
+      scsi0 = {
+        # Taille en Go. Un disque cloné peut être agrandi, mais pas réduit.
+        size         = 40
+        datastore_id = "local-lvm"
+
+        # Active les commandes TRIM/discard vers le stockage.
+        discard      = "on"
+
+        # Recommandé avec virtio-scsi-single.
+        iothread     = true
+
+        # Présente le disque comme SSD au système invité.
+        ssd          = false
+      }
+
+      # Exemple de second disque de données.
+      scsi1 = {
+        size         = 100
+        datastore_id = "local-lvm"
+
+        # Inclut le disque dans les sauvegardes Proxmox.
+        backup       = true
+      }
+    }
+
+    # L'ordre des interfaces est important :
+    # networks[0] devient net0/ipconfig0, networks[1] devient net1/ipconfig1.
+    networks = [
+      {
+        # Bridge réseau présent sur le nœud Proxmox.
+        bridge   = "vmbr0"
+
+        # VLAN access/tagué. Le bridge Proxmox doit être VLAN-aware.
+        # Omettez vlan_id pour utiliser le VLAN natif/non tagué du bridge.
+        vlan_id  = 120
+
+        # Active le pare-feu Proxmox sur cette interface.
+        firewall = true
+
+        # IPv4 statique : adresse obligatoire au format CIDR.
+        # La passerelle doit normalement être définie sur une seule interface.
+        ipv4 = {
+          address = "192.168.120.21/24"
+          gateway = "192.168.120.1"
+        }
+      },
+      {
+        bridge  = "vmbr1"
+        vlan_id = 220
+
+        # Deuxième réseau statique sans passerelle par défaut.
+        ipv4 = {
+          address = "10.220.0.21/24"
+        }
+
+        # Pour exposer plusieurs VLANs à la VM, remplacez vlan_id par :
+        # trunks = "220;221;222"
+        # Les sous-interfaces VLAN devront alors être configurées dans la VM.
+      }
+    ]
+
+    cloud_init = {
+      # Utilisateur créé/configuré au premier démarrage.
+      username    = "debian"
+
+      # Remplacez cette valeur par une vraie clé publique.
+      # Plusieurs clés peuvent être ajoutées dans la liste.
+      ssh_keys    = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... admin@example"]
+
+      # Domaine de recherche et serveurs DNS transmis à cloud-init.
+      dns_domain  = "example.internal"
+      dns_servers = ["192.168.120.10", "192.168.120.11"]
+
+      # Un mot de passe est aussi possible, mais une clé SSH est préférable :
+      # password = "mot-de-passe-temporaire"
+      #
+      # Si username = "debian" et que password est omis, le mot de passe
+      # par défaut est "debian". Changez-le avant un déploiement en production.
+    }
+
+    # Exemples d'options supplémentaires :
+    #
+    # started         = true  # Démarrer la VM après sa création.
+    # on_boot         = true  # Démarrer la VM avec le nœud Proxmox.
+    # protection      = true  # Empêcher la suppression dans Proxmox.
+    # node_name       = "pve02"
+    # pool_id         = "production"
+    #
+    # Pour une VM UEFI :
+    # bios    = "ovmf"
+    # machine = "q35"
+    # efi_disk = {
+    #   datastore_id      = "local-lvm"
+    #   type              = "4m"
+    #   pre_enrolled_keys = false
+    # }
+    #
+    # Pour ajouter un TPM :
+    # tpm_state = {
+    #   datastore_id = "local-lvm"
+    #   version      = "v2.0"
+    # }
+  }
+
+  # ---------------------------------------------------------------------------
+  # Exemple 2 : Ubuntu avec DHCP IPv4 et configuration automatique IPv6
+  # ---------------------------------------------------------------------------
+  ubuntu-worker-01 = {
+    name     = "ubuntu-worker-01"
+    template = "template-ubuntu"
+
+    networks = [
+      {
+        bridge  = "vmbr0"
+        vlan_id = 130
+
+        ipv4 = {
+          # DHCP IPv4 :
+          # - utilisez exactement "dhcp" ;
+          # - ne renseignez pas gateway, elle est fournie par le serveur DHCP.
+          address = "dhcp"
+        }
+
+        ipv6 = {
+          # "auto" utilise SLAAC.
+          # Utilisez "dhcp" pour DHCPv6 ou une adresse CIDR pour une IP statique.
+          address = "auto"
+        }
+      }
+    ]
+
+    cloud_init = {
+      username = "ubuntu"
+      ssh_keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... admin@example"]
+    }
+
+    # Les valeurs non indiquées utilisent les valeurs par défaut :
+    # - 2 cœurs, 1 socket ;
+    # - 2048 Mo de RAM ;
+    # - disque scsi0 de 20 Go ;
+    # - démarrage automatique ;
+    # - QEMU Guest Agent activé.
+  }
+}

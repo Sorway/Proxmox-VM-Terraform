@@ -1,4 +1,4 @@
-# Terraform Proxmox VE — VMs clonées et cloud-init
+# Déploiement de VMs avec Terraform sur Proxmox
 
 <p>
     <img src="https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white"/>
@@ -44,7 +44,7 @@ templates = {
 }
 ```
 
-Une VM sélectionne ensuite son image avec `template = "template-ubuntu"`. Ajouter un template ne demande aucune modification du code Terraform.
+Une VM sélectionne ensuite son image avec `template = "template-debian"`. Ajouter un template ne demande aucune modification du code Terraform.
 
 ## Créer le jeton API
 
@@ -70,12 +70,11 @@ Copy-Item terraform.tfvars.example terraform.tfvars
 Copy-Item virtual-machines.tfvars.example virtual-machines.tfvars
 terraform init
 terraform validate
-terraform plan -var-file="virtual-machines.tfvars"
-terraform apply -var-file="virtual-machines.tfvars"
+terraform plan
+terraform apply
 ```
 
-Terraform charge automatiquement `terraform.tfvars`. Le fichier externe
-`virtual-machines.tfvars` est chargé avec `-var-file`.
+Terraform charge automatiquement `terraform..auto.tfvars` et `virtual-machines.auto.tfvars`.
 
 Les deux fichiers réels sont ignorés par Git :
 

@@ -124,3 +124,8 @@ Consultez [`terraform.tfvars.example`](terraform.tfvars.example) pour le
 catalogue de templates et
 [`virtual-machines.tfvars.example`](virtual-machines.tfvars.example) pour un
 exemple complet multi-VM et multi-interface.
+
+## Licence
+
+Ce projet est distribué sous licence MIT. Consultez le fichier
+[`LICENSE`](LICENSE).
